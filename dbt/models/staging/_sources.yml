@@ -1,0 +1,9 @@
+version: 2
+sources:
+- name: bronze
+  description: Raw tables, loaded by the fixture generator (CI) or the real-data loaders.
+  tables:
+  - name: members
+  - name: providers
+  - name: preauth_requests
+  - name: claims

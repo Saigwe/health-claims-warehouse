@@ -1,0 +1,14 @@
+version: 2
+models:
+  - name: fct_preauth_request
+    columns:
+      - name: request_id
+        data_tests: [unique, not_null]
+  - name: rpt_preauth_monthly
+    columns:
+      - name: request_month
+        data_tests: [unique, not_null]
+  - name: rpt_cost_pmpm
+    columns:
+      - name: service_month
+        data_tests: [unique, not_null]
