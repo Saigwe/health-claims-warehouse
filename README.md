@@ -145,7 +145,7 @@ Set `PII_SALT` in any shared environment; the default salt is for local and CI r
 - [x] Star-schema diagram in the README
 - [ ] Metabase dashboard over the gold marts
 - [ ] Carrier (physician) claims and Part D events from the same sample
-- [ ] 3-minute Loom walkthrough
+- [ ] 3-minute Loom walkthrough ([script ready](docs/walkthrough.md))
 
 ## Interview topics this project prepares
 - Kimball modelling: SCD2 from snapshots, point-in-time joins, accumulating snapshots, early-arriving facts
