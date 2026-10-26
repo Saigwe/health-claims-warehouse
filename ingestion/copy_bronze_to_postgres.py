@@ -21,15 +21,16 @@ def main() -> None:
     args = ap.parse_args()
     dsn = " ".join(f"{k}={os.environ[v]}" for k, v in [("host", "PGHOST"), ("port", "PGPORT"), ("user", "PGUSER"),
                                                         ("password", "PGPASSWORD"), ("dbname", "PGDATABASE")] if v in os.environ)
-    con = duckdb.connect(args.db, read_only=True)
+    con = duckdb.connect()  # in-memory session: the file is attached read-only, Postgres read-write
+    con.execute(f"attach '{args.db}' as src (read_only)")
     con.execute("install postgres; load postgres")
     con.execute(f"attach '{dsn}' as pg (type postgres)")
     con.execute("call postgres_execute('pg', 'create schema if not exists bronze')")
     for t in TABLES:
-        cols = [r[0] for r in con.execute(f"describe bronze.{t}").fetchall()]
+        cols = [r[0] for r in con.execute(f"describe src.bronze.{t}").fetchall()]
         select = ", ".join(f'"{c}" as "{c.lower()}"' for c in cols)
         con.execute(f"drop table if exists pg.bronze.{t}")
-        con.execute(f"create table pg.bronze.{t} as select {select} from bronze.{t}")
+        con.execute(f"create table pg.bronze.{t} as select {select} from src.bronze.{t}")
         print(f"pg bronze.{t}: {con.execute(f'select count(*) from pg.bronze.{t}').fetchone()[0]:,} rows")
 
 

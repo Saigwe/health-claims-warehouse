@@ -15,6 +15,7 @@ Configuration comes from environment variables, so the same DAG runs locally, in
 """
 from __future__ import annotations
 
+import os
 from datetime import datetime, timedelta
 
 from airflow.providers.standard.operators.bash import BashOperator
@@ -38,7 +39,9 @@ with DAG(
     catchup=False,
     max_active_runs=1,
     default_args=default_args,
-    deadline=DeadlineAlert(
+    # `airflow dags test` in Airflow 3.2.2 fails while looking up deadline alerts for an unserialised DAG, so CI's
+    # end-to-end run sets HCW_SKIP_DEADLINE=1. Scheduled runs (and the integrity test) always have the deadline.
+    deadline=None if os.environ.get("HCW_SKIP_DEADLINE") == "1" else DeadlineAlert(
         reference=DeadlineReference.DAGRUN_QUEUED_AT,
         interval=timedelta(hours=2),
         callback=SyncCallback("hcw_alerts.deadline_missed", kwargs={"dag_id": "health_claims_daily"}),

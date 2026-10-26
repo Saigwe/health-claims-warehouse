@@ -71,6 +71,8 @@ jobs:
       - name: DAG integrity tests
         run: airflow db migrate && python -m pytest -q airflow/test_dag.py
       - name: Run the DAG for one day, twice (a retry must change nothing)
+        env:
+          HCW_SKIP_DEADLINE: "1"   # works around `dags test` failing on deadline alerts in Airflow 3.2.2
         run: |
           airflow dags test health_claims_daily 2009-03-02
           before=$(.venv/bin/python -c "import duckdb; print(duckdb.connect('$HCW_DB', read_only=True).execute('select count(*) from bronze.preauth_events').fetchone()[0])")
