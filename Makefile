@@ -26,7 +26,8 @@ preauth:
 	$(PY) ingestion/load_preauth_events.py --db $(DB) --events $(EVENTS) --all
 
 dbt:
-	$(DBT) deps --profiles-dir . && $(DBT) build --profiles-dir .
+	$(DBT) deps --profiles-dir .
+	$(DBT) build --profiles-dir .
 
 test:
 	HCW_DB=$(DB) HCW_EVENTS=$(EVENTS) $(PY) -m pytest -q tests
