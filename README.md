@@ -88,9 +88,9 @@ flowchart LR
 
 ## Tests
 - **Reconciliation:** every claim line and cent in bronze reaches the fact or the quarantine table.
-- **SCD2:** member versions never overlap or leave gaps, and exactly one is current. A unit test checks that unchanged years fold in and a change opens a version.
-- **Point-in-time:** every claim's member version was valid on its service date.
-- **Masking policy:** no silver or gold column looks like a raw id or birth date; every `member_key` is a 32-character hash; no raw id appears in gold. A pytest plants a leaking view and asserts the test fails.
+- **SCD2:** member versions never overlap or leave gaps, and exactly one is current (`trust_tests.scd2_valid` from my [dbt-trust-tests](https://github.com/Saigwe/dbt-trust-tests) package). A unit test checks that unchanged years fold in and a change opens a version.
+- **Point-in-time:** every claim's member version was valid on its service date (`trust_tests.point_in_time_valid`).
+- **Masking policy:** no silver or gold column looks like a raw id or birth date; every `member_key` is a 32-character lowercase hex hash that never equals a raw id (`trust_tests.hashed_identifier`, `trust_tests.no_columns_matching`). A pytest plants a leaking view and asserts the test fails.
 - **Accumulating snapshot:** milestones are in order, and a decision exists exactly when a request is closed.
 - **Idempotency:** re-loading a day changes nothing (pytest), and in CI, the Airflow DAG run twice for the same date leaves the same row counts.
 - **Portability:** CI builds the whole project on DuckDB and on Postgres 16.
@@ -102,7 +102,7 @@ From `make all` on the real files, on a laptop.
 |---|---|
 | Rows processed | 343,644 member-years; 857,563 claim lines; 178,679 synthetic pre-auth events |
 | Bronze load | 9 s for all CMS files; 0 s when unchanged (hash check) |
-| dbt build | 46 nodes (13 models, 32 data tests, 1 unit test) in 7.7 s |
+| dbt build | 51 nodes (13 models, 37 data tests, 1 unit test) in 7.9 s |
 | Member history | 116,352 members → 279,711 SCD2 versions; 87,289 members (75%) changed at least once |
 | Paid per member per month (inpatient / outpatient) | 2008: $199.01 / $64.22 · 2009: $190.99 / $74.02 · 2010: $105.31 / $41.56 |
 | Cost by burden (2008 inpatient PMPM) | $2.67 with no chronic conditions vs $759.42 with 5 or more |

@@ -2,7 +2,7 @@ version: 2
 models:
   - name: stg_synpuf__beneficiary_years
     data_tests:
-      - unique_combination:
+      - trust_tests.unique_combination:
           arguments:
             columns: [member_key, file_year]
     columns:

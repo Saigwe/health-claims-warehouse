@@ -4,17 +4,29 @@ models:
   - name: dim_member
     description: SCD Type 2 member dimension. Identifiers are salted hashes; birth year only.
     data_tests:
-      - unique_combination:
+      - trust_tests.unique_combination:
           arguments:
             columns: [member_key, version]
+      - trust_tests.scd2_valid:
+          arguments: {entity_key: member_key, valid_from: valid_from, valid_to: valid_to,
+                      current_flag: is_current, end_convention: inclusive_day}
+      - trust_tests.no_columns_matching:
+          arguments: &pii_patterns {patterns: ['.*desynpuf.*', '.*birth_?(dt|date).*', 'member_id', 'date_of_birth', '.*npi']}
     columns:
       - name: member_sk
         data_tests: [unique, not_null]
+      - name: member_key
+        data_tests:
+          - trust_tests.hashed_identifier:
+              arguments: {length: 32, raw_values: {relation: "source('bronze', 'beneficiary_summary')", column: DESYNPUF_ID}}
   - name: dim_provider
     columns:
       - name: provider_id
         data_tests: [unique, not_null]
   - name: fct_claim_line
+    data_tests:
+      - trust_tests.no_columns_matching:
+          arguments: *pii_patterns
     columns:
       - name: claim_line_id
         data_tests: [unique, not_null]
@@ -28,6 +40,9 @@ models:
               arguments:
                 to: ref('dim_member')
                 field: member_sk
+          - trust_tests.point_in_time_valid:
+              arguments: {to: ref('dim_member'), field: member_sk, event_at: service_from_date,
+                          valid_from: valid_from, valid_to: valid_to, end_convention: inclusive_day}
       - name: provider_id
         data_tests:
           - relationships:
@@ -35,9 +50,16 @@ models:
                 to: ref('dim_provider')
                 field: provider_id
   - name: fct_preauth_request
+    data_tests:
+      - trust_tests.no_columns_matching:
+          arguments: *pii_patterns
     columns:
       - name: request_id
         data_tests: [unique, not_null]
+      - name: member_key
+        data_tests:
+          - trust_tests.hashed_identifier:
+              arguments: {length: 32, raw_values: {relation: "source('bronze', 'preauth_events')", column: member_id}}
       - name: status
         data_tests:
           - accepted_values:
@@ -50,17 +72,17 @@ models:
                 where: matched_claim_id is not null
   - name: rpt_preauth_monthly
     data_tests:
-      - unique_combination:
+      - trust_tests.unique_combination:
           arguments:
             columns: [submitted_month, priority]
   - name: rpt_cost_pmpm
     data_tests:
-      - unique_combination:
+      - trust_tests.unique_combination:
           arguments:
             columns: [year, chronic_band]
   - name: rpt_claims_reconciliation
     data_tests:
-      - unique_combination:
+      - trust_tests.unique_combination:
           arguments:
             columns: [year, setting]
 
