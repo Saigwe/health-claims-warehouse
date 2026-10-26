@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  duckdb:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,5 +15,66 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Fixture pipeline (synthetic fixture -> dbt build with tests)
+      - name: Fixture pipeline (SynPUF-format files -> loaders -> dbt build -> masking and idempotency tests)
         run: make fixture-all
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: claims
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: claims
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Same dbt project, Postgres target (bronze copied from the DuckDB fixture)
+        run: make postgres-fixture
+
+  airflow:
+    runs-on: ubuntu-latest
+    env:
+      AIRFLOW_HOME: ${{ github.workspace }}/.airflow
+      AIRFLOW__CORE__DAGS_FOLDER: ${{ github.workspace }}/airflow/dags
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      HCW_HOME: ${{ github.workspace }}
+      HCW_PYTHON: ${{ github.workspace }}/.venv/bin/python
+      HCW_DBT: ${{ github.workspace }}/.venv/bin/dbt
+      HCW_DB: ${{ github.workspace }}/warehouse/fixture.duckdb
+      HCW_RAW: ${{ github.workspace }}/data/fixture/raw
+      HCW_EVENTS: ${{ github.workspace }}/data/fixture/preauth_events.csv
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Project venv (dbt and loaders), kept apart from Airflow's pinned dependencies
+        run: python -m venv .venv && .venv/bin/pip install -q -r requirements.txt
+      - name: Build the fixture warehouse
+        run: make fixture-all PY=.venv/bin/python DBT_BIN=$PWD/.venv/bin/dbt
+      - name: Install Airflow 3.2.2 with its constraints
+        run: pip install -q "apache-airflow==3.2.2" pytest --constraint https://raw.githubusercontent.com/apache/airflow/constraints-3.2.2/constraints-3.12.txt
+      - name: DAG integrity tests
+        run: airflow db migrate && python -m pytest -q airflow/test_dag.py
+      - name: Run the DAG for one day, twice (a retry must change nothing)
+        run: |
+          airflow dags test health_claims_daily 2009-03-02
+          before=$(.venv/bin/python -c "import duckdb; print(duckdb.connect('$HCW_DB', read_only=True).execute('select count(*) from bronze.preauth_events').fetchone()[0])")
+          airflow dags test health_claims_daily 2009-03-02
+          after=$(.venv/bin/python -c "import duckdb; print(duckdb.connect('$HCW_DB', read_only=True).execute('select count(*) from bronze.preauth_events').fetchone()[0])")
+          echo "events before=$before after=$after"; test "$before" = "$after"
+          cat results/daily/2009-03-02.json

@@ -1,8 +1,17 @@
 # Kept in-repo so CI and reviewers can run it. Secrets come from environment variables only.
 health_claims_warehouse:
-  target: duckdb
+  target: "{{ env_var('DBT_TARGET', 'duckdb') }}"
   outputs:
     duckdb:
       type: duckdb
-      path: "{{ env_var('DUCKDB_PATH', '../warehouse/health_claims_warehouse.duckdb') }}"
+      path: "{{ env_var('DUCKDB_PATH', '../warehouse/claims.duckdb') }}"
+      threads: 4
+    postgres:
+      type: postgres
+      host: "{{ env_var('PGHOST', 'localhost') }}"
+      port: "{{ env_var('PGPORT', '5432') | as_number }}"
+      user: "{{ env_var('PGUSER', 'postgres') }}"
+      password: "{{ env_var('PGPASSWORD', '') }}"
+      dbname: "{{ env_var('PGDATABASE', 'claims') }}"
+      schema: public
       threads: 4

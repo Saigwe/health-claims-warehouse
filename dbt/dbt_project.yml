@@ -12,11 +12,24 @@ target-path: target
 clean-targets:
 - target
 - dbt_packages
+
+vars:
+  # Salt for hashing member identifiers. Set PII_SALT in production; the default is for local and CI runs only.
+  pii_salt: "{{ env_var('PII_SALT', 'dev-only-salt') }}"
+  # Decision deadlines from the CMS Interoperability and Prior Authorization rule: 72 hours expedited, 7 days standard.
+  sla_hours_urgent: 72
+  sla_hours_standard: 168
+  # A request matches a claim for the same member and provider admitted within this many days of the planned date.
+  match_window_days: 3
+
 models:
   health_claims_warehouse:
     staging:
       +schema: silver
       +materialized: view
+    intermediate:
+      +schema: silver
+      +materialized: table
     marts:
       +schema: gold
       +materialized: table

@@ -1,14 +1,81 @@
 version: 2
+
 models:
+  - name: dim_member
+    description: SCD Type 2 member dimension. Identifiers are salted hashes; birth year only.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [member_key, version]
+    columns:
+      - name: member_sk
+        data_tests: [unique, not_null]
+  - name: dim_provider
+    columns:
+      - name: provider_id
+        data_tests: [unique, not_null]
+  - name: fct_claim_line
+    columns:
+      - name: claim_line_id
+        data_tests: [unique, not_null]
+      - name: service_from_date
+        data_tests: [not_null]
+      - name: member_sk
+        description: Member version valid on the service date.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_member')
+                field: member_sk
+      - name: provider_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_provider')
+                field: provider_id
   - name: fct_preauth_request
     columns:
       - name: request_id
         data_tests: [unique, not_null]
+      - name: status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [approved, denied, withdrawn, open]
+      - name: matched_claim_id
+        data_tests:
+          - unique:
+              config:
+                where: matched_claim_id is not null
   - name: rpt_preauth_monthly
-    columns:
-      - name: request_month
-        data_tests: [unique, not_null]
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [submitted_month, priority]
   - name: rpt_cost_pmpm
-    columns:
-      - name: service_month
-        data_tests: [unique, not_null]
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [year, chronic_band]
+  - name: rpt_claims_reconciliation
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [year, setting]
+
+unit_tests:
+  - name: scd2_folds_unchanged_years_and_opens_a_version_on_change
+    model: int_member_history
+    given:
+      - input: ref('stg_synpuf__beneficiary_years')
+        rows:
+          - {member_key: m1, file_year: 2008, birth_year: 1940, state_code: "10", has_diabetes: false}
+          - {member_key: m1, file_year: 2009, birth_year: 1940, state_code: "10", has_diabetes: false}
+          - {member_key: m1, file_year: 2010, birth_year: 1940, state_code: "10", has_diabetes: true}
+          - {member_key: m2, file_year: 2008, birth_year: 1950, state_code: "22", has_diabetes: true}
+    expect:
+      rows:
+        - {member_key: m1, version: 1, first_year: 2008, last_year: 2009, has_diabetes: false}
+        - {member_key: m1, version: 2, first_year: 2010, last_year: 2010, has_diabetes: true}
+        - {member_key: m2, version: 1, first_year: 2008, last_year: 2008, has_diabetes: true}

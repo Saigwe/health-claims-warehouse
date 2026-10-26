@@ -1,54 +1,33 @@
 version: 2
 models:
-- name: stg_bronze__members
-  columns:
-  - name: member_id
+  - name: stg_synpuf__beneficiary_years
     data_tests:
-    - unique
-    - not_null
-- name: stg_bronze__providers
-  columns:
-  - name: provider_id
-    data_tests:
-    - unique
-    - not_null
-- name: stg_bronze__preauth_requests
-  columns:
-  - name: request_id
-    data_tests:
-    - unique
-    - not_null
-  - name: member_id
-    data_tests:
-    - not_null
-    - relationships:
-        arguments:
-          to: ref('stg_bronze__members')
-          field: member_id
-  - name: provider_id
-    data_tests:
-    - not_null
-    - relationships:
-        arguments:
-          to: ref('stg_bronze__providers')
-          field: provider_id
-- name: stg_bronze__claims
-  columns:
-  - name: claim_id
-    data_tests:
-    - unique
-    - not_null
-  - name: member_id
-    data_tests:
-    - not_null
-    - relationships:
-        arguments:
-          to: ref('stg_bronze__members')
-          field: member_id
-  - name: provider_id
-    data_tests:
-    - not_null
-    - relationships:
-        arguments:
-          to: ref('stg_bronze__providers')
-          field: provider_id
+      - unique_combination:
+          arguments:
+            columns: [member_key, file_year]
+    columns:
+      - name: member_key
+        data_tests: [not_null]
+  - name: stg_synpuf__claim_lines
+    columns:
+      - name: claim_line_id
+        data_tests: [unique, not_null]
+      - name: setting
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [inpatient, outpatient]
+  - name: stg_preauth__events
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: event_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [submitted, info_requested, info_received, approved, denied, withdrawn]
+      - name: priority
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [urgent, standard]

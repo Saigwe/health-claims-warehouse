@@ -1,9 +1,9 @@
 version: 2
 sources:
 - name: bronze
-  description: Raw tables, loaded by the fixture generator (CI) or the real-data loaders.
+  description: Raw text tables exactly as delivered (CMS DE-SynPUF Sample 1, plus synthetic pre-authorisation events).
   tables:
-  - name: members
-  - name: providers
-  - name: preauth_requests
-  - name: claims
+  - name: beneficiary_summary
+  - name: inpatient_claims
+  - name: outpatient_claims
+  - name: preauth_events
