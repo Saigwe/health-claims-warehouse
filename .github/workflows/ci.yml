@@ -17,6 +17,8 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Fixture pipeline (SynPUF-format files -> loaders -> dbt build -> masking and idempotency tests)
         run: make fixture-all
+      - name: README charts render from the results
+        run: python charts/make_charts.py --db warehouse/fixture.duckdb --out "$RUNNER_TEMP/charts"
 
   postgres:
     runs-on: ubuntu-latest

@@ -6,7 +6,7 @@ DBT_BIN ?= dbt
 DBT = cd dbt && DUCKDB_PATH=../$(DB) $(DBT_BIN)
 CMS = https://www.cms.gov/Research-Statistics-Data-and-Systems/Downloadable-Public-Use-Files/SynPUFs/Downloads
 
-.PHONY: all download load preauth dbt test fixture-all fixture postgres-fixture clean
+.PHONY: all download load preauth dbt test fixture-all fixture postgres-fixture clean charts
 
 all: load preauth dbt test   ## real CMS DE-SynPUF Sample 1 (run `make download` once first)
 
@@ -42,3 +42,6 @@ postgres-fixture: fixture-all   ## then the same dbt project on Postgres (PG* en
 
 clean:
 	rm -rf warehouse dbt/target dbt/logs data/fixture
+
+charts:                                            ## README charts -> docs/charts
+	$(PY) charts/make_charts.py

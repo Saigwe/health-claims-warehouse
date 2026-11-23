@@ -20,6 +20,13 @@ Project 13 of my portfolio plan. At a Big Four firm I delivered a data warehouse
 | **Why it matters** | One trusted cost and turnaround view; leakage found from the data, not from audit sampling; member privacy enforced by the pipeline instead of a policy document. |
 | **Proof** | [Numbers](#numbers) from `make all` on the real files; CI runs the same code on DuckDB, Postgres and Airflow. |
 
+## Charts
+Rendered from this repo's own results by `charts/make_charts.py` (`make charts`); CI re-renders them on every push.
+
+![Paid per member per month by number of chronic conditions, 2008 to 2010](docs/charts/pmpm_by_burden.png)
+
+![Median and p90 pre-authorisation turnaround by month for urgent and standard requests](docs/charts/preauth_turnaround.png)
+
 ## Star schema
 ```mermaid
 erDiagram
